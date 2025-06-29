@@ -14,7 +14,8 @@
   ],
   "author": "Dhruv Sanghani",
   "license": "ISC",
-  "dependencies": {
-    "nodemon": "^3.1.10"
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
   }
 }
