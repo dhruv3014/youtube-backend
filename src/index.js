@@ -1,21 +1,25 @@
 // require('dotenv').config({path: '/.env'})
 import dotenv from 'dotenv'
+dotenv.config({
+    path: './.env'
+}) // also write '-r dotenv/config --experimental-json-modules' between 'nodemon' and 'src/index.js' in package.json file
 
 // import mongoose from "mongoose";
 // import { DB_NAME } from "./constants"
 import connectDB from "./db/index.js"
 import { app } from "./app.js"
 
-dotenv.config({
-    path: './.env'
-})
 
 connectDB()
 .then( () => {
-    // app.on("error", (error) => {
-    //     console.log("ERROR", error);
-    //     throw error
-    // })
+
+    // listening for error(is express app is working/communicating?)
+    app.on("error", (error) => {
+        console.log("ERROR", error);
+        throw error
+    })
+
+
     app.listen(process.env.PORT || 8000, () => {
         console.log(` Server is running at port : ${process.env.PORT}`);
     })
@@ -24,9 +28,7 @@ connectDB()
     console.log("MONGO db connection failed !!!", err);
 })
 
-/*
-import express from "express"
-const app = express()
+/* Method 1: Write database connection function/IIFE(Immediately invoked Function Expression) in this file not making separate file in db folder.
 
 (async () => {
     try {

@@ -1,4 +1,7 @@
+// Mongoose is for elegent mongodb object modeling for node.js
 import mongoose, {Schema} from "mongoose"
+// if we write like this 'import mongoose from "mongoose"' then write line 7 as, 'const userSchema = new mongoose.Schema()'
+
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 
@@ -10,7 +13,7 @@ const userSchema = new Schema(
             unique: true,
             lowercase: true,
             trim: true,
-            index: true
+            index: true // this means the name will in the database searching and also will be expensive. Don't set every fields as index because performance will be decreased due to that
         },
         email: {
             type: String,
@@ -48,6 +51,7 @@ const userSchema = new Schema(
     },{timestamps: true}
 )
 
+// pre hook - Pre middleware functions are executed one after another, when each middleware calls next.
 userSchema.pre("save", async function (next) {
     if(!this.isModified("password")) return next();
 
@@ -57,7 +61,7 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
-}
+} // return value true or false
 
 userSchema.methods.generateAccessToken = function(){
     return jwt.sign(
@@ -72,6 +76,8 @@ userSchema.methods.generateAccessToken = function(){
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
+    // syntax: jwt.sign( Payload , Secret_Key, ExpiresIn)
+    // In this we don't have to use async method because it doesn't take long time to execute
 }
 userSchema.methods.generateRefreshToken = function(){
     return jwt.sign(
@@ -86,3 +92,4 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const User = mongoose.model("User", userSchema)
+// when this(like User written above) name goes into mongodb database, it changes in to plural form and in lowercase(like users)

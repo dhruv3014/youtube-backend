@@ -23,9 +23,11 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler( async (req, res) => {
     
+    console.log(req.body);  // data coming as in 'form or json' format then data will be found in 'req.body'
+    
     // 1. get user details from frontend
     const {fullName, email, username, password} = req.body
-    console.log("email: ", email);
+    // console.log("email: ", email);
 
     // 2. validation - not empty
     if (
@@ -43,7 +45,8 @@ const registerUser = asyncHandler( async (req, res) => {
     }
     
     // 4. check for images, check for avatar
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const avatarLocalPath = req.files?.avatar[0]?.path; // here we get req.files due multer middleware applied in user.routes.js file and use avatar[0] because it gives an object through which we can get path of the file.
+    // below we wrote diffrent way to get coverImageLocalPath because since we have not any required condition for coverImage upload so if don't send an image in postman for coverImage it will give error but using this different way solves that problem
     // const coverImageLocalPath = req.files?.coverImage?.path;
     let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
@@ -52,16 +55,17 @@ const registerUser = asyncHandler( async (req, res) => {
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
     }
+    // console.log(req.files);
+    
     
     // 5. upload them to cloudinary, avatar check
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
     if (!avatar) {
-        throw new ApiError(400, "Avatar file is required")
+        throw new ApiError(400, "Avatar file is required!!")
     }
 
     // 6. create user object - create entry in db
-    // 7. remove password and refresh token field from response
     const user = await User.create({
         fullName,
         avatar: avatar.url,
@@ -70,6 +74,9 @@ const registerUser = asyncHandler( async (req, res) => {
         password,
         username: username.toLowerCase()
     })
+
+    // 7. remove password and refresh token field from response
+    // Mongodb adds _.id in every entry
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
@@ -84,7 +91,7 @@ const registerUser = asyncHandler( async (req, res) => {
         new ApiResponse(200, createdUser, "User Registered Successfully")
     )
 
-    // steps for Register Backend:
+    // steps for User Registwration  Backend:
     // 1. get user details from frontend
     // 2. validation - not empty
     // 3. check if user already exists: username, email
@@ -240,7 +247,7 @@ const updateAccountDetails = asyncHandler ( async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -262,6 +269,8 @@ const updateUserAvatar = asyncHandler ( async (req, res) => {
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is missing")
     }
+
+    // TODO : delete old image - assignment
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -311,6 +320,8 @@ const updateUserCoverImage = asyncHandler ( async (req, res) => {
         new ApiResponse(200, user, "coverImage updated successfully")
     )
 })
+
+
 
 export { 
     registerUser,
