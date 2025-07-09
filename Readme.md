@@ -46,9 +46,7 @@ Info. about all packages we are installing for Backend
 
 # 17. npm install cloudinary = 3rd party service to upload files, videos
 
-# 18. npm i multer = 
-
-
+# 18. npm i multer = multer is a Node.js middleware for handling multipart/form-data (primarily used for file uploads) in web applications built with Express or similar frameworks.
 
 Info. about folder we used in this backend project
 # Since git don't track folders so to track folders we need to add '.gitkeep' file in that folder which we want to push in github.
@@ -70,8 +68,6 @@ Statuscode :
 # Redirection messages (300 - 399)
 # Client error reponses (400 - 499)
 # Server error reponses (500 - 599)
-
-
 
 Instructions to avoid errors:
 # Don't use special character for writting MONGODB_URI in .env file and remove / from last
