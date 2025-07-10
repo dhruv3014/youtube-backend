@@ -48,7 +48,20 @@ Info. about all packages we are installing for Backend
 
 # 18. npm i multer = multer is a Node.js middleware for handling multipart/form-data (primarily used for file uploads) in web applications built with Express or similar frameworks.
 
-Info. about folder we used in this backend project
+# 19. npm i mongoose-aggregate-paginate-v2 = A page based custom aggregate pagination library for Mongoose with customizable labels.
+<!-- 
+# It's a Mongoose plugin that simplifies pagination for aggregate queries in MongoDB. Instead of manually handling complex pagination logic (like counting documents, slicing results, and calculating metadata), this plugin automates the process and returns a structured paginated response.
+# Key Features:
+1. Paginates Results: Splits large datasets into manageable chunks.
+2. Returns Metadata: Includes total pages, current page, document counts, etc.
+3. Works with Aggregation Pipelines: Handles complex queries with $match, $group, etc.
+4. Customizable: Control page numbers, limits, sorting, and more.
+# "paginate" refers to the process of breaking down large datasets from MongoDB aggregation queries into smaller, manageable chunks ("pages") with metadata for navigation.
+# aggregate queries refer to operations using the Aggregation Pipeline, a powerful framework for data transformation and analysis.
+-->
+# 20. npm i mongoose-paginate-v2 = If you are looking for basic query pagination library without aggregate, use this one mongoose-paginate-v2
+
+Extra Info. of backend journey:
 # Since git don't track folders so to track folders we need to add '.gitkeep' file in that folder which we want to push in github.
 
 #  app.on() -
@@ -73,3 +86,99 @@ Instructions to avoid errors:
 # Don't use special character for writting MONGODB_URI in .env file and remove / from last
 
 # Always write code in try-catch or pass through promises and use async-await when doing operations like connect, save data, others through Databases(MongoDB) because chance of problems are very high or ot may take time to do operations because database is on 
+
+How to use mongoose-aggregate-paginate-v2?
+<!-- 
+// bookModel.js
+const mongoose = require('mongoose');
+const aggregatePaginate = require('mongoose-aggregate-paginate-v2');
+
+const bookSchema = new mongoose.Schema({
+  title: String,
+  author: String,
+  year: Number,
+  price: Number
+});
+
+// Apply the plugin to the schema
+bookSchema.plugin(aggregatePaginate);
+
+const Book = mongoose.model('Book', bookSchema);
+module.exports = Book; 
+-->
+
+<!-- 
+// server.js
+const express = require('express');
+const Book = require('./bookModel');
+
+const app = express();
+app.use(express.json());
+
+app.get('/books', async (req, res) => {
+  try {
+    // Step 1: Define the aggregation pipeline
+    const pipeline = [
+      { $match: { year: { $gte: 2010 } } },        // Filter books
+      { $group: { 
+          _id: "$author", 
+          avgPrice: { $avg: "$price" }, 
+          totalBooks: { $sum: 1 } 
+        } 
+      }
+    ];
+
+    // Step 2: Set pagination options
+    const options = {
+      page: parseInt(req.query.page) || 1, // Current page (default: 1)
+      limit: parseInt(req.query.limit) || 5 // Docs per page (default: 5)
+    };
+
+    // Step 3: Execute paginated aggregation
+    const result = await Book.aggregatePaginate(
+      Book.aggregate(pipeline), 
+      options
+    );
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Start server
+app.listen(3000, () => console.log('Server running on port 3000')); 
+-->
+
+<!-- 
+// output
+When you call GET /books?page=2&limit=3
+{
+  "docs": [
+    {
+      "_id": "J.K. Rowling",
+      "avgPrice": 25.99,
+      "totalBooks": 12
+    },
+    {
+      "_id": "George R.R. Martin",
+      "avgPrice": 28.50,
+      "totalBooks": 8
+    },
+    {
+      "_id": "Stephen King",
+      "avgPrice": 19.99,
+      "totalBooks": 15
+    }
+  ],
+  "totalDocs": 10,          // Total matching documents
+  "limit": 3,               // Docs per page
+  "page": 2,                // Current page
+  "totalPages": 4,          // Total pages (10 docs / 3 per page = 4 pages)
+  "pagingCounter": 4,       // Starting doc number for this page
+  "hasPrevPage": true,      // Previous page exists?
+  "hasNextPage": true,      // Next page exists?
+  "prevPage": 1,            // Previous page number
+  "nextPage": 3             // Next page number
+} 
+-->

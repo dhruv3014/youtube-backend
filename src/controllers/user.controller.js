@@ -3,11 +3,9 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import { deleteFromCloudinary } from "../utils/DeleteFileFromCloudinary.js"
 import jwt from "jsonwebtoken";
-
-// const storingOldFileForDeletion = async (oldLocalFilePath) => {
-//     return oldLocalFilePath
-// }
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -169,8 +167,9 @@ const logoutUser = asyncHandler (async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 // this removes the field from document
+                // here if we set null then also it will work but should not use null for response it's not a good practice
             }
         },
         {
@@ -226,12 +225,12 @@ const refreshAccessToken = asyncHandler ( async (req, res) => {
 })
 
 const changeCurrentPassword = asyncHandler( async (req, res) => {
-    const {oldpassword, newPassword} = req.body  
+    const {oldPassword, newPassword} = req.body  
 
     // const {oldpassword, newPassword, confPassword} = req.body
     
-    const user = await User.findzbyId(req.user?._id)
-    const isPasswordCorrect = await user.isPasswordCorrect(oldpassword)
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
     
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Invalid old password")
@@ -281,14 +280,17 @@ const updateUserAvatar = asyncHandler ( async (req, res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-    // TODO : delete old image - assignment
-    // fs.unlinkSync()
+    // Getting old avatar URL
+    const fetchingOldAvatar = await User.findById(req.user?._id).select("avatar");
+    const oldAvatarPublicId = extractPublicIdFromUrl(fetchingOldAvatar.avatar);
 
+    // Upload new avatar
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     if (!avatar.url) {
         throw new ApiError(400, "Error while uploading on avatar")
     }
 
+    // Update user
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -299,6 +301,13 @@ const updateUserAvatar = asyncHandler ( async (req, res) => {
         {new: true}
     ).select("-password")
 
+    // Delete old avatar
+    try {
+        await deleteFromCloudinary(oldAvatarPublicId)
+    } catch (error) {
+        console.error("Failed to delete old avatar: ", error);
+    }
+
     return res.status(200).json(
         new ApiResponse(200, user, "Avatar updated successfully")
     )
@@ -306,17 +315,21 @@ const updateUserAvatar = asyncHandler ( async (req, res) => {
 
 const updateUserCoverImage = asyncHandler ( async (req, res) => {
     const coverImageLocalPath = req.file?.path
-
     if (!coverImageLocalPath) {
         throw new ApiError(400, "coverImage file is missing")
     }
 
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    // Getting old avatar URL
+    const fetchingOldCoverImage = await User.findById(req.user?._id).select("avatar");
+    const oldCoverImagePublicId = extractPublicIdFromUrl(fetchingOldCoverImage.avatar);
 
+    // Uploading new coverImage
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
     if (!coverImage.url) {
         throw new ApiError(400, "Error while uploading on coverImage")
     }
 
+    // Update user
     const  user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -326,6 +339,13 @@ const updateUserCoverImage = asyncHandler ( async (req, res) => {
         },
         {new: true}
     ).select("-password")
+
+    // Delete old avatar
+    try {
+        await deleteFromCloudinary(oldCoverImagePublicId)
+    } catch (error) {
+        console.error("Failed to delete old avatar: ", error);
+    }
 
     return res.status(200).json(
         new ApiResponse(200, user, "coverImage updated successfully")
@@ -357,7 +377,7 @@ const getUserChannelProfile = async (req, res) => {
         },
         {   
             $lookup: {
-                form: "subscriptions", 
+                from: "subscriptions", 
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo"
@@ -403,10 +423,11 @@ const getUserChannelProfile = async (req, res) => {
 }
 
 const getWatchHistory = asyncHandler ( async (req, res) => {
+    const userId = req.user._id  
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.Object(req.params._id) 
+                _id: userId // _id: new mongoose.Types.ObjectId(req.params._id)   // not working through req.params._id
                 // since _id is given stored as "_id: ObjectId('hwefh387rpr7r893ffh89hdc')", but doing req.params._id will give only inner part 'hwefh387rpr7r893ffh89hdc'. This was not a problem when the _id is stored in a variable because sort this things all out but while writting aggregate pipelines this is not allowed(mongoose don't sort this out) so we need to write _id as '_id: new mongoose.Types.Object(req.params._id)'.
             }
         },
