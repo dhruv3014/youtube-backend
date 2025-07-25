@@ -24,7 +24,8 @@ Protects against denial-of-service (DoS) attacks via oversized payloads.
 
 3. app.use()
 Purpose: Mounts the middleware globally.
-Effect: All routes (e.g., POST /api/data) that receive JSON data will use this parser. */
+Effect: All routes (e.g., POST /api/data) that receive JSON data will use this parser. 
+*/
 
 app.use(express.urlencoded({extended: true, limit: "16kb"}))  // configures Express middleware to handle URL-encoded form data. Handles data from HTML forms submitted with Content-Type: application/x-www-form-urlencoded (the default for web forms). Parses the data into a JavaScript object accessible at req.body.
 
@@ -55,7 +56,7 @@ app.use(express.static("public", {
 
 app.use(cookieParser())  // integrates the cookie-parser middleware into an Express.js application
 /*
-Standard Cookies	      req.cookies	          Unsigned cookies as key-value pairs ({ user: "Alice" })
+Standard Cookies	        req.cookies	          Unsigned cookies as key-value pairs ({ user: "Alice" })
 Signed Cookies	          req.signedCookies	      Verifies cookie integrity using a secret (tampered cookies become undefined)
 Set Cookies in Response	  res.cookie()	          Attaches cookies to outgoing responses
 */

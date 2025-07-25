@@ -25,7 +25,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler( async (req, res) => {
     
-    console.log(req.body);  // data coming as in 'form or json' format then data will be found in 'req.body'
+    // console.log(req.body);  // data coming as in 'form or json' format then data will be found in 'req.body'
     
     // 1. get user details from frontend
     const {fullName, email, username, password} = req.body
@@ -352,7 +352,7 @@ const updateUserCoverImage = asyncHandler ( async (req, res) => {
     )
 })
 
-const getUserChannelProfile = async (req, res) => {
+const getUserChannelProfile = asyncHandler ( async (req, res) => {
     const {username} = req.params  // taking data from an URL
     if (!username?.trim()) {
         throw new ApiError(400, "username is missing")
@@ -420,7 +420,7 @@ const getUserChannelProfile = async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, channel[0], "User channel fetcheed successfully")
     )
-}
+})
 
 const getWatchHistory = asyncHandler ( async (req, res) => {
     const userId = req.user._id  
